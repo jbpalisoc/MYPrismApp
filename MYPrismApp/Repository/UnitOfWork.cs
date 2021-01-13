@@ -5,29 +5,25 @@ using System.Text;
 
 namespace MYPrismApp.Repository
 {
-    class UnitOfWork
+    public class UnitOfWork: IUnitOfWork
     {
-        private MyDbContext _dbContext;
-        private BaseRepository<Animal> _animals;
+        private readonly MyDbContext _context;
 
-        public UnitOfWork(MyDbContext dbContext)
+        public UnitOfWork(MyDbContext context)
         {
-            _dbContext = dbContext;
+            _context = context;
+            Animals = new AnimalRepository(_context);
         }
 
-        public IRepository<Animal> Animals
+        public IAnimalRepository Animals { get; private set; }
+        public int Complete()
         {
-            get
-            {
-                return _animals ??
-                    (_animals = new BaseRepository<Animal>(_dbContext));
-            }
+            return _context.SaveChanges();
         }
 
-
-        public void Commit()
+        public void Dispose()
         {
-            _dbContext.SaveChanges();
+            _context.Dispose();
         }
     }
 }

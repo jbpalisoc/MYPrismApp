@@ -7,6 +7,10 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Windows.Data;
+using System.Windows.Documents;
 using System.Windows.Input;
 
 
@@ -19,7 +23,7 @@ namespace MYPrismApp.ViewModels
         Animal NewAnimal = new Animal();
 
 
-        // private UnitOfWork unitOfWork = new UnitOfWork();
+         private UnitOfWork unitOfWork = new UnitOfWork(new MyDbContext());
 
         private string _title = "Animals";
         public string Title
@@ -55,6 +59,14 @@ namespace MYPrismApp.ViewModels
             get { return _animallist; }
             set { SetProperty(ref _animallist, value); }
         }
+
+        private List<TodoItem> _todoList;
+        public List<TodoItem> TodoList
+        {
+            get { return _todoList; }
+            set { SetProperty(ref _todoList, value); }
+        }
+
         private Animal _selectedAnimal;
         public Animal SelectedAnimal
         {
@@ -77,6 +89,7 @@ namespace MYPrismApp.ViewModels
             DeleteAnimal = new DelegateCommand(ExcuteDelete);
             UpdateAnimal = new DelegateCommand(ExcuteUpdate);
             GetSelected = new DelegateCommand(ExcuteGetSelected);
+            Todo();
         }
 
         private void Execute()
@@ -84,9 +97,11 @@ namespace MYPrismApp.ViewModels
             NewAnimal = new Animal();
             NewAnimal.Name = _name;
             NewAnimal.Description = _description;
-            _context.Animals.Add(NewAnimal);
-            _context.SaveChanges();
-            //GetAnimals();
+            unitOfWork.Animals.Add(NewAnimal);
+            unitOfWork.Complete();
+            //_context.Animals.Add(NewAnimal);
+            //_context.SaveChanges();
+            GetAnimals();
             Name = string.Empty;
             Description = string.Empty;
             ShowText = "Item Added!";
@@ -115,13 +130,31 @@ namespace MYPrismApp.ViewModels
             //GetAnimals();
             Name = string.Empty;
             Description = string.Empty;
+            CollectionViewSource.GetDefaultView(_animallist).Refresh();
             ShowText = "Item Updated!";
         }
 
         private void GetAnimals()
         {
-            _animallist = _context.Animals.Local.ToObservableCollection();
+            //_animallist = _context.Animals.Local.ToObservableCollection();
+            _animallist = new ObservableCollection<Animal>(unitOfWork.Animals.GetAll());
+        }
 
+        private void Todo()
+        {
+            HttpClient client = new HttpClient();
+            client.BaseAddress = new Uri("https://localhost:44378/");
+            //client.DefaultRequestHeaders.Add("appkey", "myapp_key");
+            client.DefaultRequestHeaders.Accept.Add(
+               new MediaTypeWithQualityHeaderValue("application/json"));
+
+            HttpResponseMessage response = client.GetAsync("api/TodoItems").Result;
+            if (response.IsSuccessStatusCode)
+            {
+                //var employees = response.Content.ReadAsAsync<IEnumerable<List>>().Result;
+                _todoList = (List<TodoItem>)response.Content.ReadAsAsync<IEnumerable<TodoItem>>().Result;
+
+            }
         }
 
     }

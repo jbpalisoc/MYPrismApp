@@ -1,13 +1,12 @@
-﻿using MYPrismApp.Model;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
 namespace MYPrismApp.Repository
 {
-    public interface IUnitOfWork
+    public interface IUnitOfWork : IDisposable
     {
-        IRepository<Animal> Animals { get; }
-        void Commit();
+        IAnimalRepository Animals { get; }
+        int Complete();
     }
 }
